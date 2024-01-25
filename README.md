@@ -1,4 +1,4 @@
-# STGenetics
+# App
 
 ## Animal Management Web Application
 
