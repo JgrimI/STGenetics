@@ -1,12 +1,23 @@
 ﻿@page "/"
 @using System.Collections.Generic
-@inject NavigationManager NavigationManager 
+@inject NavigationManager NavigationManager
 @inject ILoadingService LoadingService
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Welcome to Animal Management System</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container mt-5">
+    <div class="jumbotron">
+        <h1 class="display-4">Hello, Animal Lovers!</h1>
+        <p class="lead">Welcome to your new Animal Management Application.</p>
+        <hr class="my-4">
+        <p>Explore a wide range of functionalities to manage your animal database efficiently.</p>
+        <button class="btn btn-primary btn-lg" @onclick="NavigateToAnimals">Manage Animals</button>
+    </div>
+</div>
 
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private void NavigateToAnimals()
+    {
+        NavigationManager.NavigateTo("/animals");
+    }
+}
