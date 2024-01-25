@@ -1,0 +1,54 @@
+﻿<Bar @bind-Visible="@topbarVisible" Mode="BarMode.Horizontal" Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" Background="Background.White" Shadow="Shadow.Default" ThemeContrast="ThemeContrast.Light">
+
+    <Blazorise.Bootstrap5.BarToggler Bar="@SideBar" />
+    <BarBrand>
+        <BarItem>
+            <BarLink To="">
+                <BarIcon IconName="IconName.Dashboard" />
+                STGenetics
+            </BarLink>
+        </BarItem>
+    </BarBrand> 
+    <BarMenu>
+        <BarStart>
+               
+        </BarStart>
+        <BarEnd>
+             <BarItem>
+                <BarLink To="https://github.com/Megabit/Blazorise">GitHub</BarLink>
+            </BarItem>
+
+          @*   <div class="@(LoggedIn ? "content-background" : "content-background-login")">
+
+                <div class="@(LoggedIn ? "" : "d-none")">
+                </div>
+                <main>
+                    <div class="top-row px-4  @(LoggedIn ? "" : "d-none")">
+                        <div style="text-align:right;"> *@
+                            @if (LoggedIn)
+            {
+
+                                <BarItem>
+                                    <BarLink To="/account">
+                                        <BarIcon IconName="IconName.Key" />
+                                        Account
+                                    </BarLink>
+                                </BarItem>
+                              
+                                <BarItem>
+                                    <BarLink To="logout">Logout</BarLink>
+                                </BarItem> 
+            }
+@*                         </div>
+                    </div>
+                </main>
+            </div> *@
+             
+        </BarEnd>
+    </BarMenu>
+</Bar>
+@code { 
+    [Parameter] public bool LoggedIn { get; set; } = true;
+    [Parameter] public Bar SideBar { get; set; }
+    private bool topbarVisible = true;   
+}

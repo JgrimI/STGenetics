@@ -1,0 +1,654 @@
+﻿@page "/animals"
+@using STGenetics.Shared
+@using System.Text
+@using System.Text.Json
+@inject HttpClient Http
+@inject ILoadingService LoadingService
+@inject IToastService toastService 
+
+
+@* 
+<Row>
+    <Column>
+        <div class="form-container">
+            <!-- Animal Name -->
+            <div class="form-group">
+                <RadzenLabel Text="Animal Name" Component="RadzenAutoComplete" />
+                <RadzenAutoComplete @bind-Value=@frmAnimal Data=@animalList TextProperty="Name" Style="width: 100%;" InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Animal Name" }})" />
+                <RadzenText TextStyle="TextStyle.Body2" Style="margin-top: 5px;">
+                    Start typing e.g. Bullseye
+                </RadzenText>
+            </div>
+
+            <!-- Select Breeds -->
+            <div class="form-group">
+                <RadzenLabel Text="Select Breeds" Component="DropDownMultipleChips" />
+                <RadzenDropDown @bind-Value=@selectedBreeds Data=@breeds Multiple=true AllowClear=true Placeholder="Select breeds" Chips=true Style="width: 100%;" />
+            </div>
+
+            <!-- Select Status -->
+            <div class="form-group">
+                <RadzenLabel Text="Select Status" Component="DropDownBindValue" />
+                <RadzenDropDown @bind-Value=@frmStatus Data=@statusValues Style="width: 100%;" Name="DropDownBindValue" />
+            </div>
+        </div>
+    </Column>
+</Row> *@
+<Row>
+    <Column>
+        <div class="form-container-horizontal">
+            <RadzenStack Orientation="Radzen.Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Wrap="Radzen.FlexWrap.Wrap">
+           
+                <div class="form-container-horizontal">
+                    <!-- Animal Name -->
+                    <div class="form-group-horizontal" style="margin-bottom:-20px!important">
+                        <RadzenLabel Text="Name" Component="RadzenAutoComplete" />
+                        <RadzenAutoComplete @bind-Value=@animal.Name Data=@animalList TextProperty="Name"   InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Animal Name" }})" />
+                        <RadzenText TextStyle="TextStyle.Body2">
+                            Start typing e.g. Bullseye
+                        </RadzenText>
+                    </div>
+
+                    <!-- Select Breeds -->
+                    <div class="form-group-horizontal">
+                        <RadzenLabel Text="Select Breeds" Component="DropDownMultipleChips" />
+                        <RadzenDropDown @bind-Value=@selectedBreeds Data=@breeds Multiple=true AllowClear=true Placeholder="Select breeds" Chips=true   />
+                    </div>
+                       <!-- BirthDate -->
+                <div class="form-group-horizontal">
+                    <RadzenLabel Text="Birth Date" />
+                    <RadzenDatePicker @bind-Value=@animal.BirthDate   />
+                </div>
+
+                <!-- Sex -->
+                <div class="form-group-horizontal">
+                    <RadzenLabel Text="Sex" />
+                    <RadzenDropDown @bind-Value=@animal.Sex Data=@sexValues   />
+                </div>
+
+                <!-- Price -->
+                <div class="form-group-horizontal">
+                    <RadzenLabel Text="Price" />
+                    <RadzenNumeric @bind-Value=@animal.Price   />
+                </div>
+
+                    <!-- Select Status -->
+                    <div class="form-group-horizontal">
+                        <RadzenLabel Text="Select Status" Component="DropDownBindValue" />
+                        <RadzenDropDown @bind-Value=@animal.Status Data=@statusValues   Name="DropDownBindValue" />
+                    </div>
+            </div>
+            </RadzenStack>
+           
+        </div>
+    </Column>
+</Row>
+<Row>
+     <Column>
+        <div class="form-container-horizontal">
+            <RadzenStack Orientation="Radzen.Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Wrap="Radzen.FlexWrap.Wrap">
+      
+            <div class="form-group-horizontal">
+                        <RadzenButton Text="Search" Click="@SearchAnimals" ButtonStyle="ButtonStyle.Primary" Class="search-button" />
+
+                    </div>
+
+
+            </RadzenStack> 
+        </div>
+    </Column>
+</Row>
+<Row>
+    <Column>
+
+        <Accordion>
+            <Collapse Visible="@collapse1Visible">
+                <CollapseHeader>
+                    <Heading Size="HeadingSize.Is5">
+                        <Blazorise.Bootstrap5.AccordionToggle>Listed Animals</Blazorise.Bootstrap5.AccordionToggle>
+                    </Heading>
+                </CollapseHeader>
+                <CollapseBody>
+                    <Blazorise.Bootstrap5.Card Margin="Margin.Is4.OnY">
+                        <CardBody>
+                            <DataGrid @ref=dataGridRef
+                                      TItem="Animal"
+                                      Data="data"
+                                      TotalItems="totalAnimals"
+                                      ReadData="@OnReadData"
+                                      AggregateData="@animalList"
+                                      Striped="true" 
+                                      Bordered="true"
+                                      Responsive
+                                      ShowPager
+                                      ShowPageSizes
+                                      Sortable 
+                                       SortMode="Blazorise.DataGrid.DataGridSortMode.Multiple"
+                                       @bind-SelectedRow="@selectedAnimal"
+                                       SelectionMode="Blazorise.DataGrid.DataGridSelectionMode.Multiple"
+                                       SelectedRowsChanged="@OnSelectionChanged"
+                                      Editable
+                                       EditMode="editMode"
+                                      BatchEdit
+                                       BatchChange="OnBatchChange"
+                                       BatchSaving="OnBatchSaving"
+                                       BatchSaved="OnBatchSaved"
+                                       BatchEditCellStyling="OnCellBatchEditStyling"
+                                       RowBatchEditStyling="(x, y ) => OnRowBatchEditStyling(x,y)"
+                                      UseValidation
+                                       ValidationsSummaryLabel="The following validation errors have occurred..."
+                                      ShowValidationsSummary>
+                                <DataGridAggregates>
+
+                                    <DataGridAggregate TItem="Animal" Field="@nameof( Animal.Price )" Aggregate="DataGridAggregateType.Sum" DisplayFormat="{0:C}" DisplayFormatProvider="@System.Globalization.CultureInfo.GetCultureInfo("us-US")" />
+
+                                </DataGridAggregates>
+
+                                <DataGridColumns>
+                                    <DataGridCommandColumn>
+                                        <SaveBatchCommandTemplate>
+                                            <Blazorise.Bootstrap5.Button Background=Background.Info Size=Size.Small Clicked="@context.Clicked">Save Changes (@batchQuantity.ToString())</Blazorise.Bootstrap5.Button>
+                                            </SaveBatchCommandTemplate>
+                                            <CancelBatchCommandTemplate>
+                                                <Blazorise.Bootstrap5.Button Background=Background.Light Size=Size.Small Clicked="@context.Clicked">Cancel Changes</Blazorise.Bootstrap5.Button>
+                                            </CancelBatchCommandTemplate>
+                                        </DataGridCommandColumn>
+
+                                        <DataGridColumn TextAlignment="TextAlignment.Center" TItem="Animal" Field="@nameof( Animal.AnimalId )" Caption="#" Width="60px" SortDirection="SortDirection.Ascending" />
+
+                                        <DataGridColumn TItem="Animal" Field="@nameof( Animal.Name )" Caption="Name" Editable>
+                                    </DataGridColumn>
+
+                                    <DataGridColumn TItem="Animal" Field="@nameof( Animal.Breed )" Caption="Breed" Editable />
+
+                                     <DataGridDateColumn TItem="Animal" Field="@nameof( Animal.BirthDate )" Caption="Date Of Birth" Editable />
+
+                                     <DataGridSelectColumn TItem="Animal" Field="@nameof( Animal.Sex )" Caption="Sex" Editable Data="@sexOptions" ValueField="(x) => ((ListItemModel)x).Name" TextField="(x) => ((ListItemModel)x).Value" />
+
+                                     <DataGridNumericColumn TItem="Animal" Field="@nameof( Animal.Price )" Caption="Price" Editable Width="140px" DisplayFormat="{0:C}" DisplayFormatProvider="@System.Globalization.CultureInfo.GetCultureInfo("us-US")" TextAlignment="TextAlignment.End">
+                                     </DataGridNumericColumn>
+
+                                     <DataGridSelectColumn TItem="Animal" Field="@nameof(Animal.Status)" Caption="Active" Editable Data="@statusOptions" ValueField="(x) => ((ListItemModel)x).Name" TextField="(x) => ((ListItemModel)x).Value" />
+                                     <DataGridMultiSelectColumn Width="30px"></DataGridMultiSelectColumn>
+
+
+                                     @* SaveBatchCommandAllowed=false CancelBatchCommandAllowed=false *@
+                                 </DataGridColumns>
+                                 <ButtonRowTemplate>
+                                     <Blazorise.Bootstrap5.Button Color="Color.Link" Clicked="context.ClearFilterCommand.Clicked">Clear Filter</Blazorise.Bootstrap5.Button>
+
+                                 </ButtonRowTemplate>
+
+                                 <EmptyTemplate>
+                                     <div class="box">
+                                         No animals were found!
+                                     </div>
+                                 </EmptyTemplate>
+
+                             </DataGrid>
+                         </CardBody>
+
+                     </Blazorise.Bootstrap5.Card>
+
+
+                </CollapseBody>
+            </Collapse>
+   
+        </Accordion>
+
+
+    </Column>
+
+    
+    <Column>
+
+        <Accordion>
+             <Collapse Visible="@collapse2Visible">
+                 <CollapseHeader>
+                     <Heading Size="HeadingSize.Is5">
+                         <Blazorise.Bootstrap5.AccordionToggle>Selected Animals to Buy</Blazorise.Bootstrap5.AccordionToggle>
+                     </Heading>
+                 </CollapseHeader>
+                 <CollapseBody>
+                     @if (_selectedAnimals?.Count > 0)
+                    {
+                        <Blazorise.Bootstrap5.Card>
+                              <CardBody>
+                                <DataGrid @ref="dataGridRefSelected"
+                                          TItem="Animal"
+                                          Data="@_selectedAnimals"
+                                        Responsive
+                                        ShowPager
+                                        ShowPageSizes
+                                        Groupable
+                                        ShowGrouping>
+                                 <DataGridColumns>
+
+                                     <DataGridColumn TextAlignment="TextAlignment.Center" TItem="Animal" Field="@nameof( Animal.AnimalId )" Caption="#" Width="60px" />
+                                     <DataGridColumn TItem="Animal" Field="@nameof( Animal.Name )" Caption="Name" />
+                                     <DataGridColumn TItem="Animal" Field="@nameof( Animal.Breed )" Caption="Breed" Filterable="false" Groupable Grouping />
+
+                                         <DataGridDateColumn TItem="Animal" Field="@nameof( Animal.BirthDate )" Caption="Date Of Birth" />
+
+                                         <DataGridSelectColumn TItem="Animal" Field="@nameof( Animal.Sex )" Caption="Sex" Data="@sexOptions" ValueField="(x) => ((ListItemModel)x).Name" TextField="(x) => ((ListItemModel)x).Value" />
+
+                                         <DataGridNumericColumn TItem="Animal" Field="@nameof( Animal.Price )" Caption="Price" Width="140px" DisplayFormat="{0:C}" DisplayFormatProvider="@System.Globalization.CultureInfo.GetCultureInfo("us-US")" TextAlignment="TextAlignment.End">
+                                         </DataGridNumericColumn>
+
+                                         <DataGridSelectColumn TItem="Animal" Field="@nameof(Animal.Status)" Caption="Active" Data="@statusOptions" ValueField="(x) => ((ListItemModel)x).Name" TextField="(x) => ((ListItemModel)x).Value" />
+                                     </DataGridColumns>
+                                 </DataGrid>
+                             </CardBody>
+
+                         </Blazorise.Bootstrap5.Card>
+
+
+                        <Blazorise.Bootstrap5.Card>
+                            <CardBody>
+                                <Blazorise.Bootstrap5.CardTitle Size="3">
+                                    Purchase Summary
+                                </Blazorise.Bootstrap5.CardTitle>
+                                <CardText>
+                                    <Paragraph>Purchase Amount Before Discount(Withoud Shipping): @TotalPurchaseNoDiscount.ToString("C")</Paragraph>
+                                        <Divider />
+                                        <Paragraph>Discount Applied: @DiscountPercentage %</Paragraph>
+                                    <Divider />
+                                    <Paragraph>Purchase Amount After Discount(Withoud Shipping): @TotalPurchaseDiscount.ToString("C")</Paragraph>
+                                        <Divider />
+                                        <Paragraph>Shipping Amount: @ShippingAmount.ToString("C")</Paragraph>
+                                        <Divider />
+                                        <Paragraph>Total: @((TotalPurchaseDiscount + ShippingAmount).ToString("C"))</Paragraph>
+                                    </CardText>
+
+                                </CardBody>
+                            </Blazorise.Bootstrap5.Card>
+                    }
+                    else
+                    {
+                        <Paragraph>Please select some animals to add.</Paragraph>
+
+                    }
+                </CollapseBody>
+            </Collapse>
+
+
+        </Accordion>
+
+
+    </Column>
+</Row> 
+@code {
+
+    // Constants
+    private const decimal ShippingCharge = 1000.00m;
+
+    // Private fields
+    private bool collapse1Visible = true;
+    private bool collapse2Visible = true;
+    private IEnumerable<Animal> data;
+    private List<Animal> animalList;
+    private List<Animal> _selectedAnimals = new List<Animal>();
+    private IList<string> selectedBreeds;
+    private IEnumerable<string> breeds;
+    private IEnumerable<string> statusValues;
+    private IEnumerable<string> sexValues;
+    private Animal selectedAnimal;
+    private Animal animal = new Animal();
+    private int totalAnimals;
+    private int batchQuantity = 0;
+    private decimal TotalPurchaseNoDiscount;
+    private decimal TotalPurchaseDiscount;
+    private decimal DiscountPercentage;
+    private decimal ShippingAmount;
+    private string frmAnimal;
+    private decimal frmPrice;
+    private string frmStatus;
+    private Blazorise.DataGrid.DataGridEditMode editMode = Blazorise.DataGrid.DataGridEditMode.Cell;
+
+    // Static fields
+    private static List<ListItemModel> statusOptions = new List<ListItemModel>
+    {
+        new ListItemModel { Name = "Active", Value = "Active" },
+        new ListItemModel { Name = "Inactive", Value = "Inactive" },
+    };
+
+    private static List<ListItemModel> sexOptions = new List<ListItemModel>
+    {
+        new ListItemModel { Name = "Male", Value = "Male" },
+        new ListItemModel { Name = "Female", Value = "Female" },
+    };
+
+    // References to components
+    private DataGrid<Animal> dataGridRef;
+    private DataGrid<Animal> dataGridRefSelected;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        breeds = await GetAnimalBreeds();
+        statusValues = statusOptions.Select(option => option.Value).Distinct();
+        sexValues = sexOptions.Select(option => option.Value).Distinct(); 
+    } 
+
+    private async Task<int> GetTotalFromExternalSource()
+    {
+        var total = await Http.GetFromJsonAsync<int>("api/Animal/GetTotalAnimals");
+        return total;
+    }
+
+    private async Task<IEnumerable<string>> GetAnimalBreeds()
+    {
+        var breeds = await Http.GetFromJsonAsync<IEnumerable<string>>("api/Animal/GetAnimalBreeds");
+        return breeds;
+    }
+
+
+    private async Task<IEnumerable<Animal>> GetDataFromExternalSource(int page, int pageSize, string sortBy = "")
+    {
+        var uri = $"api/Animal/GetAnimalPaged?page={page}&pageSize={pageSize}";
+
+        // Append the sortBy parameter only if it's not empty
+        if (!string.IsNullOrEmpty(sortBy))
+        {
+            uri += $"&sortBy={Uri.EscapeDataString(sortBy)}";
+        }
+        Console.WriteLine(uri);
+        var response = await Http.GetFromJsonAsync<List<Animal>>(uri);
+        return response ?? new List<Animal>();
+    }
+
+    private void OnSelectionChanged(List<Animal> newSelection)
+    {
+
+        var anyDuplicates = newSelection.GroupBy(x => x.AnimalId).Any(g => g.Count() > 1);
+        if (anyDuplicates)
+        {
+            toastService.ShowError("Duplicates are not allowed");
+            return;
+        }
+        if (_selectedAnimals.Count != newSelection.Count || !_selectedAnimals.SequenceEqual(newSelection))
+        {
+            _selectedAnimals = new List<Animal>(newSelection);
+
+            Console.WriteLine("Selected Animals changed.");
+            Console.WriteLine($"Selected: {_selectedAnimals.Count}");
+            if(_selectedAnimals.Count > 0)
+                CalculateOrderSummary();
+            StateHasChanged();
+        }
+
+    }
+
+    private async Task OnReadData(DataGridReadDataEventArgs<Animal> e)
+    {
+        LoadingService.StartLoading();
+
+        if (!e.CancellationToken.IsCancellationRequested)
+        {
+            var sortBy = GetSortByString();
+
+            IEnumerable<Animal> response = await GetDataFromExternalSource(e.Page, e.PageSize, sortBy);
+
+            if (!e.CancellationToken.IsCancellationRequested)
+            {
+                data = response;
+                totalAnimals = await GetTotalFromExternalSource(); // Make sure this also accepts the sortBy parameter if it affects the count
+                animalList = new List<Animal>(response);
+            }
+        }
+
+        LoadingService.EndLoading();
+    }
+
+    private string GetSortByString()
+    {
+        var sortables = dataGridRef.GetSortByColumns();
+        var sortList = sortables.Select(sortable =>
+            $"{sortable.Field}{(sortable.CurrentSortDirection.ToString().Equals("Descending") ? " desc" : " asc")}"
+        ).ToList();
+        string result = sortList.Count > 0?string.Join(',', sortList):"";
+        Console.WriteLine(result);
+        return result;
+    }
+
+    private Task OnBatchChange(DataGridBatchChangeEventArgs<Animal> args)
+    {
+        Console.WriteLine("Batch Change");
+        batchQuantity = dataGridRef.BatchChanges.Count;
+        return Task.CompletedTask;
+    }
+
+    private Task OnBatchSaving(DataGridBatchSavingEventArgs<Animal> args)
+    {
+        Console.WriteLine("Batch Saving");
+        Console.WriteLine(args);
+        return Task.CompletedTask;
+    }
+
+    private Task OnBatchSaved(DataGridBatchSavedEventArgs<Animal> args)
+    {
+
+        foreach (var arg in args.Items)
+        {
+            switch (arg.State.ToString())
+            {
+                case "New":
+
+                    Animal newAnimal = new Animal(); 
+
+                    newAnimal.Name = arg.NewItem.Name;
+                    newAnimal.BirthDate = arg.NewItem.BirthDate;
+                    newAnimal.Breed = arg.NewItem.Breed;
+                    newAnimal.Price = arg.NewItem.Price;
+                    newAnimal.Sex = arg.NewItem.Sex;
+                    newAnimal.Status = arg.NewItem.Status;
+                    createAnimal(newAnimal);
+                    break;
+
+                case "Edit":
+
+                    Animal editAnimal = new Animal();
+
+                    editAnimal.AnimalId = arg.NewItem.AnimalId;
+                    editAnimal.Name = arg.NewItem.Name;
+                    editAnimal.BirthDate = arg.NewItem.BirthDate;
+                    editAnimal.Breed = arg.NewItem.Breed;
+                    editAnimal.Price = arg.NewItem.Price;
+                    editAnimal.Sex = arg.NewItem.Sex;
+                    editAnimal.Status = arg.NewItem.Status;
+                    updateAnimal(editAnimal);  
+
+                    break;
+                case "Delete":
+                    deleteAnimal(arg.NewItem.AnimalId);  
+                    break;
+                default:
+ 
+                    break;
+            } 
+        }
+
+        batchQuantity = 0;
+        return Task.CompletedTask;
+    }
+
+    private void OnRowBatchEditStyling(DataGridBatchEditItem<Animal> batchEditItem, DataGridRowStyling cellStyling)
+    {
+        if (batchEditItem.State == DataGridBatchEditItemState.Delete)
+        {
+            cellStyling.Background = Background.Secondary;
+        }
+    }
+
+    private void OnCellBatchEditStyling(DataGridBatchEditItem<Animal> batchEditItem, DataGridColumn<Animal> column, DataGridCellStyling cellStyling)
+    {
+        if (batchEditItem.State == DataGridBatchEditItemState.Edit && batchEditItem.IsModified(column.Field))
+        {
+            cellStyling.Background = Background.Light;
+            cellStyling.TextColor = TextColor.Success;
+        }
+    } 
+
+    private async Task SearchAnimals()
+    {
+
+        LoadingService.StartLoading();
+        var args = new Dictionary<string, object>
+            {
+                ["name"] = animal.Name ?? string.Empty,
+                ["birthDate"] = animal.BirthDate != DateTime.MinValue ? animal.BirthDate.ToString("yyyy-MM-dd") : string.Empty,
+                ["sex"] = animal.Sex ?? string.Empty,
+                ["price"] = animal.Price > 0 ? animal.Price : "",
+                ["status"] = animal.Status ?? string.Empty,
+                ["selectedBreeds"] = selectedBreeds != null ? selectedBreeds.ToArray() : Array.Empty<string>()
+            };
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(args),
+            Encoding.UTF8,
+            "application/json");
+
+        try
+        { 
+            var response = await Http.PostAsync("api/Animal/SearchAnimals", content);
+            // Process the response, update the UI as needed
+            if (response.IsSuccessStatusCode)
+            {
+                data = await response.Content.ReadFromJsonAsync<List<Animal>>();
+                totalAnimals =data.Count(); // Make sure this also accepts the sortBy parameter if it affects the count
+                animalList = new List<Animal>(data);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JSON Exception: {ex.Message} {ex.StackTrace}");
+            // Handle the exception, possibly by displaying an error message
+        }
+
+
+        LoadingService.EndLoading();
+        StateHasChanged();
+    }
+
+    private async void deleteAnimal(int animalId)
+    {
+         try
+        {
+            var response = await Http.DeleteAsync($"api/Animal/DeleteAnimal/{animalId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Handle successful deletion
+                // For example, refresh the list of animals or show a success message
+                toastService.ShowSuccess($"Animal with ID {animalId} has been deleted.");
+                Console.WriteLine($"Animal with ID {animalId} has been deleted.");
+                // RefreshAnimals(); // Assuming you have a method to refresh the animal list
+            }
+            else
+            {
+                // Handle non-successful responses
+                toastService.ShowError($"Error deleting animal: {response.ReasonPhrase}");
+                Console.WriteLine($"Error deleting animal: {response.ReasonPhrase}");
+                // Show an error message to the user
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle any exceptions that occurred during the API call
+            Console.WriteLine($"Exception when trying to delete animal: {ex.Message}");
+            // Show an error message to the user
+        }
+     
+    }
+
+    private async void updateAnimal(Animal animal)
+    {
+        var response = await Http.PutAsJsonAsync("api/Animal/UpdateAnimal", animal);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Handle success
+            toastService.ShowSuccess("Animal updated successfully");
+            // Show success message or perform other actions like refreshing the data grid
+            Console.WriteLine("Animal updated successfully");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            // Handle bad request, e.g., validation error
+            toastService.ShowError("Invalid animal data provided");
+            Console.WriteLine("Invalid animal data provided");
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            // Handle not found 
+            toastService.ShowWarning("Animal not found");
+            Console.WriteLine("Animal not found");
+        }
+        else
+        {
+            // Handle other possible errors
+            toastService.ShowError($"Error occurred: {response.ReasonPhrase}");
+            Console.WriteLine($"Error occurred: {response.ReasonPhrase}");
+        }
+    }
+
+
+    private async void createAnimal(Animal animal)
+    {
+        var response = await Http.PostAsJsonAsync("api/Animal/CreateAnimal", animal);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Handle success
+            toastService.ShowSuccess("Animal Created successfully");
+            Console.WriteLine("Animal updated successfully");
+            // Optionally, get the created animal if needed
+            // Animal createdAnimal = await response.Content.ReadFromJsonAsync<Animal>();
+        }
+        else
+        {
+            // Handle failure
+            var errorMessage = await response.Content.ReadAsStringAsync();
+            toastService.ShowError($"Error occurred: {errorMessage}");
+
+            Console.WriteLine($"Error occurred: {errorMessage}");
+        }
+        StateHasChanged();
+    } 
+
+    private void CalculateOrderSummary()
+    {
+        int totalQuantity = _selectedAnimals.Count;
+        decimal totalOriginalPrice = _selectedAnimals.Sum(animal => animal.Price);
+        decimal totalDiscountAmount = 0;
+        TotalPurchaseNoDiscount = totalOriginalPrice;
+        // Group by breed
+        var breedGroups = _selectedAnimals.GroupBy(animal => animal.Breed);
+        foreach (var group in breedGroups)
+        {
+            // Apply 5% discount for each animal in the group if count > 5
+            if (group.Count() > 5)
+            {
+                totalDiscountAmount += group.Sum(animal => animal.Price * 0.05m); // 5% discount per animal
+            }
+        }
+
+        // Additional 3% discount on total purchase for more than 10 animals
+        if (totalQuantity > 10)
+        {
+            totalDiscountAmount += totalOriginalPrice * 0.03m; // 3% discount on total
+        }
+
+        // Calculate total purchase amount and apply discounts
+        TotalPurchaseDiscount = totalOriginalPrice - totalDiscountAmount;
+
+        // Calculate the discount percentage based on the original price
+        DiscountPercentage = (totalDiscountAmount / totalOriginalPrice) * 100;
+
+        // Determine shipping amount
+        ShippingAmount = totalQuantity > 20 ? 0 : ShippingCharge; // Free shipping for more than 20 animals
+    }
+     
+}

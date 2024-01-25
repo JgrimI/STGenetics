@@ -1,0 +1,126 @@
+﻿@layout STGenetics.Client.Shared.RootLayo
+@inherits LayoutComponentBase
+@using Blazored.Toast.Configuration
+@using System.Text.Json;
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject ILoadingService LoadingService
+@inject IToastService toastService
+ 
+<BlazoredToasts Position="ToastPosition.TopCenter"
+                ShowProgressBar="true"
+                Timeout="10"
+                IconType="IconType.FontAwesome"
+                InfoIcon="fa-solid fa-circle-exclamation fa-beat"
+                WarningIcon="fa-solid fa-triangle-exclamation fa-beat"
+                SuccessIcon="fa-solid fa-thumbs-up fa-bounce"
+                ErrorIcon="fa-solid fa-bug fa-shake" />
+@* 
+ <button class="btn btn-info" @onclick="@(() => toastService.ShowInfo("I'm an INFO message"))">Info Toast</button>
+<button class="btn btn-success" @onclick="@(() => toastService.ShowSuccess("I'm a SUCCESS message with a custom title"))">Success Toast</button>
+<button class="btn btn-warning" @onclick="@(() => toastService.ShowWarning("I'm a WARNING message"))">Warning Toast</button>
+<button class="btn btn-danger" @onclick="@(() => toastService.ShowError("I'm an ERROR message"))">Error Toast</button>
+  *@
+<LoadingIndicator @ref="loadingIndicator" FullScreen FadeIn>
+    <IndicatorTemplate>
+        <Animate Animation="Animations.FadeDownRight" Auto Duration="TimeSpan.FromMilliseconds( 700 )">
+            <Div>
+                <SpinKit Type="SpinKitType.Chase" Size="100px" Color="#90d980;" />
+            </Div>
+        </Animate>
+    </IndicatorTemplate>
+</LoadingIndicator>
+
+ <Layout Sider>
+        <LayoutSider>
+            <LayoutSiderContent>
+                <Bar @ref="@sidebar" Breakpoint="Breakpoint.Desktop" NavigationBreakpoint="Breakpoint.Tablet" ThemeContrast="ThemeContrast.Dark"
+                     Mode="BarMode.VerticalInline" CollapseMode="BarCollapseMode.Small" Style="bgcolor:#3482df;">
+
+                    <BarBrand Class="logo-container">
+                        <BarItem>
+                            <BarLink To="#">
+                                <BarIcon IconName="customIcon" />
+
+                            </BarLink>
+                        </BarItem>
+                    </BarBrand>
+                    <BarMenu>
+                        <BarStart>
+                            <BarItem>
+                                <BarLink To="">
+                                    <BarIcon IconName="IconName.Dashboard" />
+                                    Dashboard
+                                </BarLink>
+                            </BarItem>
+                            <BarItem>
+                                <Blazorise.Bootstrap5.BarDropdown>
+                                    <Blazorise.Bootstrap5.BarDropdownToggle>
+                                        <BarIcon IconName="IconName.Edit" />
+                                        Pages
+                                    </Blazorise.Bootstrap5.BarDropdownToggle>
+                                    <Blazorise.Bootstrap5.BarDropdownMenu>
+                                        <BarDropdownItem>
+                                            <BarLink To="/animals">Animals</BarLink>
+                                        </BarDropdownItem>
+                                    </Blazorise.Bootstrap5.BarDropdownMenu>
+                                </Blazorise.Bootstrap5.BarDropdown>
+                            </BarItem>
+                            <BarItem>
+                                <BarLink To="account"> <BarIcon IconName="IconName.Key" />Account</BarLink>
+                            </BarItem>
+                        </BarStart>
+                    </BarMenu>
+                </Bar>
+            </LayoutSiderContent>
+        </LayoutSider>
+        <Layout>
+            <LayoutHeader Fixed Class="topHeader">
+                <TopMenu LoggedIn="@loggedIn" SideBar="@sidebar"/>
+            </LayoutHeader>
+
+            <LayoutContent >
+                 <main>
+       
+            <article class="content px-4">
+                    @Body
+
+            </article>
+
+            </main>
+            </LayoutContent>
+
+        </Layout>
+</Layout>
+@code {
+    [CascadingParameter]
+    public App app { get; set; }
+    public LoadingIndicator loadingIndicator;
+    private Bar sidebar;
+    private bool loggedIn = true;
+
+    private void ShowLoading() => loadingIndicator.Show();
+    private void HideLoading() => loadingIndicator.Hide();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        await base.OnInitializedAsync();
+        LoadingService.LoadingStarted += ShowLoading;
+        LoadingService.LoadingEnded += HideLoading;
+            
+    }
+
+    private bool collapseNavMenu = true;
+
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    RenderFragment customIcon =@<div class="logo-container "><img src="/images/logo2.png" class="logo" /></div>;
+}
